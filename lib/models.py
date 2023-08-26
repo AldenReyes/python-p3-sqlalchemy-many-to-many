@@ -10,6 +10,16 @@ metadata = MetaData(naming_convention=convention)
 
 Base = declarative_base(metadata=metadata)
 
+game_user = Table(
+    'game_users',
+    Base.metadata,
+    Column('id', Integer(), primary_key=True),
+    Column('game_id', ForeignKey('games.id')),
+    Column('user_id', ForeignKey('users.id')),
+    extend_existing=True,
+)
+
+
 class Game(Base):
     __tablename__ = 'games'
 
@@ -20,11 +30,15 @@ class Game(Base):
     price = Column(Integer())
 
     reviews = relationship('Review', backref=backref('game'))
+    users = relationship('User', secondary=game_user, back_populates='games')
 
     def __repr__(self):
-        return f'Game(id={self.id}, ' + \
-            f'title={self.title}, ' + \
-            f'platform={self.platform})'
+        return (
+            f'Game(id={self.id}, '
+            + f'title={self.title}, '
+            + f'platform={self.platform})'
+        )
+
 
 class Review(Base):
     __tablename__ = 'reviews'
@@ -32,10 +46,28 @@ class Review(Base):
     id = Column(Integer(), primary_key=True)
     score = Column(Integer())
     comment = Column(String())
-    
+
     game_id = Column(Integer(), ForeignKey('games.id'))
+    user_id = Column(Integer(), ForeignKey('users.id'))
 
     def __repr__(self):
-        return f'Review(id={self.id}, ' + \
-            f'score={self.score}, ' + \
-            f'game_id={self.game_id})'
+        return (
+            f'Review(id={self.id}, '
+            + f'score={self.score}, '
+            + f'game_id={self.game_id})'
+        )
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer(), primary_key=True)
+    name = Column(String())
+    created_at = Column(DateTime(), server_default=func.now())
+    updated_at = Column(DateTime(), onupdate=func.now())
+
+    reviews = relationship('Review', backref=backref('user'))
+    games = relationship('Game', secondary=game_user, back_populates='users')
+
+    def __repr__(self):
+        return f'User(id = {self.id}, ' + f'name={self.name})'
